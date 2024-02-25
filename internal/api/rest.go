@@ -39,10 +39,12 @@ func (r *RestAPI) HandlersInit() error {
 		return ctx.SendFile("web/static/favicon.ico")
 	}).Get("/", func(ctx *fiber.Ctx) error {
 		m := fiber.Map{
+			"IsAuthed": false,
 			"Title": "Notes",
 		}
 
 		if username := ctx.Cookies("username"); username != "" {
+			m["IsAuthed"] = true
 			user, err := r.db.GetUserByName(username)
 			if err != nil {
 				return err
@@ -85,22 +87,32 @@ func (r *RestAPI) HandlersInit() error {
 			return ctx.Status(fiber.StatusBadRequest).SendString(err.Error())
 		}
 
-		var name, password string
+		var name, password1, password2 string
 		if vals, exists := form.Value["username"]; !exists || len(vals) == 0 {
 			return ctx.Status(fiber.StatusBadRequest).SendString("no username")
 		} else {
 			name = vals[0]
 		}
 
-		if vals, exists := form.Value["password"]; !exists || len(vals) == 0 {
+		if vals, exists := form.Value["password1"]; !exists || len(vals) == 0 {
 			return ctx.Status(fiber.StatusBadRequest).SendString("no password")
 		} else {
-			password = vals[0]
+			password1 = vals[0]
+		}
+
+		if vals, exists := form.Value["password2"]; !exists || len(vals) == 0 {
+			return ctx.Status(fiber.StatusBadRequest).SendString("no password")
+		} else {
+			password2 = vals[0]
+		}
+
+		if password1 != password2 {
+			return fmt.Errorf("")
 		}
 
 		user := &entities.User{
 			Name:     name,
-			Password: password,
+			Password: password1,
 		}
 
 		id, err := r.db.AddUser(user)
@@ -218,7 +230,7 @@ func (r *RestAPI) HandlersInit() error {
 
 		r.logger.Debug(noteID)
 		return nil
-	}).Post("/note/remove/:id", func(ctx *fiber.Ctx) error {
+	}).Get("/note/remove/:id", func(ctx *fiber.Ctx) error {
 		id, err := strconv.ParseUint(ctx.Params("id"), 10, 64)
 		if err != nil {
 			r.logger.Error(err)

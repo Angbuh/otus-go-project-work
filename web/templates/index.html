@@ -14,21 +14,28 @@
     <!-- <link rel="stylesheet" type="text/css" href="/web/css/style.css/"> -->
 </head>
 <body>
-    {{if .Notes}}
+    {{if .IsAuthed}}
+        <div class="main_div">
+        <form action="/note/add" method="post" enctype="multipart/form-data">
+            <input type="text" name="title" placeholder="Заголовок"><br>
+            <textarea type="text" name="content" placeholder="Содержимое"></textarea><br>
+            <input type="submit" value="Добавить заметку">
+        </form>
         {{range .Notes}}
             {{.Title}}<br>
             {{.Content}}<br>
             <a href="/note/remove/{{ .ID }}">Удалить статью</a><br>
         {{end}}
         <a href="/logout">logout</a>
+        </div>
     {{else}}
         <div class="reg">
         <h1>Регистрация / Авторизация</h1>
         <img src= '/static/images/1995688.png' alt="" width="300" height="300">
         </div>
         <div class="main_d">
-            <form action="/auth" method="post">
-                <input name="username" placeholder="Имя пользователя" required> <br>
+            <form action="/auth" method="post" enctype="multipart/form-data">
+                <input type="text" name="username" placeholder="Имя пользователя" required> <br>
                 <input type="password" name="password" placeholder="Пароль" required> <br>
                 <br>
                 <input type="submit" value="Авторизоваться">
@@ -37,7 +44,7 @@
         </div>
 
         <div class="main_div">
-            <form name='signup' action="/reg" method="post" id="register_form">
+            <form action="/reg" method="post" enctype="multipart/form-data">
                 <input type="text" name="username" placeholder="Имя пользователя" required> <br>
                 <input type="password" name="password1" id="password1" placeholder="Пароль не менее 8 символов"  required> <br>
                 <input type="password" name="password2" id="password2" placeholder="Повторите пароль" required> <br>
