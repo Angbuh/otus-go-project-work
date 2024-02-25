@@ -1,0 +1,49 @@
+    <!DOCTYPE html>
+    <html>
+        <head>
+            <title>Notes App</title>
+            <meta charset="utf-8">
+            <link rel="stylesheet" href="/web/css/style.css/">
+            <meta http-equiv="Cache-control" content="no-cache">
+            <meta http-equiv="Pragma" content="no-cache">
+            <meta http-equiv="Expires" content="-1">
+        </head>
+        <body>
+            <div class="pril">
+                <h1>Приложение для заметок</h1>
+                </div> 
+                        <div class="note-header">
+                            {{.Title}}
+                            <div class="note-actionc">
+                            <button class="note-edit"><i class="fa-solid fa-pen-to-square"><i><button>
+                            <button class="note-delete"><i class="fa solid fa-trash"><i><button>
+                            </div>
+                            {{.Content}}
+
+                            <form>
+                                <input required type="text" id="note-title" placeholder="Заголовок заметки" />
+                                <textarea id="note-body" placeholder="Заметка"></textarea>
+                                <input type="submit" id="note-submit" title="Add Note" />
+                            </form>
+                        <div>
+                    </main>
+                </div>
+            </body>
+            <div class="main_div">
+                    {{if .Notes}}
+                    {{range .Notes}}
+                    {{.Title}}<br>
+                    {{.Content}}<br>
+                    {{end}}
+                {{else}}
+                    <a href="/leave_account/" style="color:red;">Выйти из аккаунта</a>
+
+                    <div class="note">
+                        <a href="/note/?id={{ .ID }}">{{ .Title }}</a> <br>
+                        {{ .Text }} <br>
+                    </div>
+                    <a href="/note/remove/{{ .ID }}">Удалить статью</a><br><br><br>
+                {{ end }}
+            </div>
+        </body>
+    </html>

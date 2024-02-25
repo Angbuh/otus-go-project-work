@@ -1,0 +1,104 @@
+@font-face {
+    font-family: arhip;
+    src: url("web/fonts/Arkhip_font.ttf");
+}
+
+@font-face {
+    font-family: RobotoMedium;
+    src: url("/static/fonts/Roboto-Medium.ttf");
+}
+
+body {
+    background-color: bisque;
+    height: 100%;
+    width: 100%;
+    background-size: auto;
+  
+}
+.pril {
+    width: 75%;
+    border-radius: 10px;
+    text-align: center;
+    font-family: "RobotoMedium";
+    font-size: 15pt;
+    margin: auto;
+}
+.note {
+    display: flex;
+    flex-direction: column;
+
+    padding: 10px;
+    background-color: #a15fbb;
+    border-radius: 5px;
+}
+.main_div {
+    width: 75%;
+    border-radius: 10px;
+    text-align: center;
+    font-family: "RobotoMedium";
+    font-size: 15pt;
+    margin: auto;
+}
+
+.main_d {
+     width: 75%;
+    border-radius: 10px;
+    text-align: center;
+    font-family: "RobotoMedium";
+    font-size: 15pt;
+    margin: auto;
+}
+.reg{
+    text-align: center;
+}
+
+a {
+    color: black;
+    text-decoration: none;
+}
+
+iv {
+    border-style: solid;
+    border-width: 3;
+    border-color: black;
+    border-radius: 10px;
+    letter-spacing: 5;
+}
+
+.hdr {
+    margin-bottom: 2.5%;
+    text-align: right;
+    /* border: 2px solid yellow; */
+    /* border-radius: 10px; */
+    size: 10.5%;
+}
+
+.hdr a {
+    color: darkorange;
+    margin-right: 0.5%;
+    margin-left: 0.5%;
+}
+
+a {
+    color: black;
+    text-decoration: none;
+}
+
+a:hover {
+    color: red;
+}
+
+form input {
+    margin-top: 0.25%;
+    margin-bottom: 0.25%;
+}
+
+.note {
+    margin-left: 0.75%;
+    margin-right: 0.75%;
+
+}
+
+.title {
+    font-size: xx-large;
+}

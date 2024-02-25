@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Регистрация/Авторизация</title>
+        <meta charset="utf-8">
+        <link rel="stylesheet" href="/web/css/style.css">
+        <!-- <script type="text/javascript" src="/web/js/reg_verification.js"></script> -->
+        <meta http-equiv="Cache-control" content="no-cache">
+        <meta http-equiv="Pragma" content="no-cache">
+        <meta http-equiv="Expires" content="-1">
+        <style>
+            form br {
+                margin-top: 5px;
+                margin-bottom: 5px;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="reg">
+        <h1>Регистрация / Авторизация</h1>
+        <img src= 'images/1995688.png' alt="" width="300" height="300">
+        </div>
+
+        <div class="main_d">
+            <form action="/auth" method="post">
+                <input name="username" placeholder="Имя пользователя" required> <br>
+                <input type="password" name="password" placeholder="Пароль" required> <br>
+                <br>
+                <input type="submit" value="Авторизоваться">
+            </form>
+            <br>
+        </div>
+
+        <div class="main_div">
+            <form name='signup' action="/reg" method="post" id="register_form">
+                <input type="text" name="username" placeholder="Имя пользователя" required> <br>
+                <input type="password" name="password1" id="password1" placeholder="Пароль не менее 8 символов"  required> <br>
+                <input type="password" name="password2" id="password2" placeholder="Повторите пароль" required> <br>
+                <err_tag id="err_tag" style="color: red;"></err_tag> <br>
+                <input type="submit" value="Зарегистрироваться" >
+            </form>
+        </div>
+    </body>
+</html>
