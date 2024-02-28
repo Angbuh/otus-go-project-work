@@ -14,20 +14,25 @@
     <!-- <link rel="stylesheet" type="text/css" href="/web/css/style.css/"> -->
 </head>
 <body>
+    <div class="main_div">
     {{if .IsAuthed}}
-        <div class="main_div">
         <form action="/note/add" method="post" enctype="multipart/form-data">
             <input type="text" name="title" placeholder="Заголовок"><br>
             <textarea type="text" name="content" placeholder="Содержимое"></textarea><br>
-            <input type="submit" value="Добавить заметку">
+            <input type="submit" value="Добавить">
         </form>
+
         {{range .Notes}}
-            {{.Title}}<br>
-            {{.Content}}<br>
-            <a href="/note/remove/{{ .ID }}">Удалить статью</a><br>
+            <form action="/note/update/{{.ID}}" method="post" enctype="multipart/form-data">
+                <input type="text" name="title" value="{{.Title}}"><br>
+                <textarea type="text" name="content">{{.Content}}</textarea><br>
+                <input type="submit" value="Обновить">
+            </form>
+            <form action="/note/remove/{{ .ID }}" method="get" enctype="multipart/form-data">
+                <input type="submit" value="Удалить">
+            </form>
         {{end}}
-        <a href="/logout">logout</a>
-        </div>
+        <a href="/logout">Выйти из аккаунта</a>
     {{else}}
         <div class="reg">
         <h1>Регистрация / Авторизация</h1>
@@ -53,5 +58,6 @@
             </form>
         </div>
     {{end}}
+</div>
 </body>
 </html>

@@ -40,7 +40,7 @@ body {
     margin: auto;
 }
 
-.main_d {
+.main_d,.remove {
      width: 75%;
     border-radius: 10px;
     text-align: center;
@@ -102,3 +102,6 @@ form input {
 .title {
     font-size: xx-large;
 }
+
+
+   

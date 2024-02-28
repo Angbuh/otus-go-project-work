@@ -50,16 +50,6 @@ func (s SQLiteDatabase) UpdateNote(note *entities.Note) error {
 	return err
 }
 
-func (s SQLiteDatabase) GetNoteById(ID uint64) (*entities.Note, error) {
-	row := s.db.QueryRow(`SELECT * FROM Note WHERE ID = $1;`, ID)
-
-	n := &entities.Note{}
-	if err := row.Scan(&n.ID, &n.Title, &n.Content); err != nil {
-		return nil, err
-	}
-	return n, nil
-}
-
 func (s SQLiteDatabase) GetAllNotes() ([]*entities.Note, error) {
 	row, err := s.db.Query(`SELECT * FROM Note`)
 	if err != nil {
@@ -87,25 +77,6 @@ func (s SQLiteDatabase) GetUserByName(name string) (*entities.User, error) {
 		return nil, err
 	}
 	return user, nil
-}
-
-func (s SQLiteDatabase) GetNotesByUserId(ID uint64) ([]*entities.Note, error) {
-	row, err := s.db.Query(`SELECT * FROM Note WHERE UserID = $1;`, ID)
-	if err != nil {
-		return nil, err
-	}
-
-	notes := []*entities.Note{}
-
-	for row.Next() {
-		n := &entities.Note{}
-		if err := row.Scan(&n.ID, &n.Title, &n.Content, &n.UserID); err != nil {
-			return nil, err
-		}
-		notes = append(notes, n)
-	}
-
-	return notes, nil
 }
 
 func (s SQLiteDatabase) GetNotesByUserName(username string) (map[uint64]*entities.Note, error) {

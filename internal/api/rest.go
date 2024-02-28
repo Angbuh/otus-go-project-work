@@ -1,10 +1,8 @@
 package api
 
 import (
-	"bytes"
-	"encoding/json"
 	"fmt"
-	"my_notes_project/internal/database"
+	"my_notes_project/internal/core"
 	"my_notes_project/internal/entities"
 	"strconv"
 
@@ -15,11 +13,11 @@ import (
 
 type RestAPI struct {
 	app    *fiber.App
-	db     database.DBRepository
 	logger *logrus.Logger
+	core   core.ServiceCore
 }
 
-func NewRestAPI(db database.DBRepository, logger *logrus.Logger) *RestAPI {
+func NewRestAPI(core core.ServiceCore, logger *logrus.Logger) *RestAPI {
 	engine := html.New("./web/templates", ".html")
 	app := fiber.New(fiber.Config{
 		Views: engine,
@@ -29,7 +27,7 @@ func NewRestAPI(db database.DBRepository, logger *logrus.Logger) *RestAPI {
 
 	return &RestAPI{
 		app:    app,
-		db:     db,
+		core:   core,
 		logger: logger,
 	}
 }
@@ -40,18 +38,14 @@ func (r *RestAPI) HandlersInit() error {
 	}).Get("/", func(ctx *fiber.Ctx) error {
 		m := fiber.Map{
 			"IsAuthed": false,
-			"Title": "Notes",
+			"Title":    "Notes",
 		}
 
 		if username := ctx.Cookies("username"); username != "" {
 			m["IsAuthed"] = true
-			user, err := r.db.GetUserByName(username)
+			notes, err := r.core.GetNotesByUserName(username)
 			if err != nil {
-				return err
-			}
-
-			notes, err := r.db.GetNotesByUserId(user.ID)
-			if err != nil {
+				// TODO: ctx.Status...
 				return err
 			}
 
@@ -60,26 +54,6 @@ func (r *RestAPI) HandlersInit() error {
 
 		r.logger.Debug(m)
 		return ctx.Render("index", m)
-	}).Get("/note/get/:id", func(ctx *fiber.Ctx) error {
-		id, err := strconv.ParseUint(ctx.Params("id"), 10, 64)
-		if err != nil {
-			r.logger.Error(err)
-			return ctx.Status(fiber.StatusBadRequest).SendString(err.Error())
-		}
-
-		r.logger.Debug(id)
-		var note *entities.Note
-		if note, err = r.db.GetNoteById(id); err != nil {
-			r.logger.Error(err)
-			return ctx.Status(fiber.StatusBadRequest).SendString(err.Error())
-		}
-		noteBytes, err := json.Marshal(note)
-		if err != nil {
-			r.logger.Error(err)
-			return err
-		}
-
-		return ctx.SendStream(bytes.NewReader(noteBytes))
 	}).Post("/reg", func(ctx *fiber.Ctx) error {
 		form, err := ctx.MultipartForm()
 		if err != nil {
@@ -106,26 +80,11 @@ func (r *RestAPI) HandlersInit() error {
 			password2 = vals[0]
 		}
 
-		if password1 != password2 {
-			return fmt.Errorf("")
+		if err = r.core.RegisterUser(name, password1, password2); err != nil {
+			return err
 		}
 
-		user := &entities.User{
-			Name:     name,
-			Password: password1,
-		}
-
-		id, err := r.db.AddUser(user)
-		if err != nil {
-			r.logger.Error(err)
-			return ctx.Status(fiber.StatusBadRequest).SendString(err.Error())
-		}
-
-		user.ID = id
-
-		r.logger.Debug(user)
-
-		return nil
+		return ctx.RedirectBack("/")
 	}).Post("/auth", func(ctx *fiber.Ctx) error {
 		form, err := ctx.MultipartForm()
 		if err != nil {
@@ -135,26 +94,24 @@ func (r *RestAPI) HandlersInit() error {
 
 		var name, password string
 		if vals, exists := form.Value["username"]; !exists || len(vals) == 0 {
+			r.logger.Error("no username")
 			return ctx.Status(fiber.StatusBadRequest).SendString("no username")
 		} else {
 			name = vals[0]
 		}
 
 		if vals, exists := form.Value["password"]; !exists || len(vals) == 0 {
+			r.logger.Error("no password")
 			return ctx.Status(fiber.StatusBadRequest).SendString("no password")
 		} else {
 			password = vals[0]
 		}
 
-		var user *entities.User
-		if user, err = r.db.GetUserByName(name); err != nil {
-			r.logger.Error(err)
+		isValid, err := r.core.IsValidUserCredentials(name, password)
+		if err != nil {
 			return ctx.Status(fiber.StatusBadRequest).SendString(err.Error())
-		}
-
-		if user.Password != password {
-			r.logger.Error("invalid data")
-			return fiber.NewError(fiber.StatusBadRequest, "invalid data")
+		} else if !isValid {
+			return fmt.Errorf("invalid credentials")
 		}
 
 		ctx.Cookie(&fiber.Cookie{
@@ -163,7 +120,7 @@ func (r *RestAPI) HandlersInit() error {
 			Path:  "/",
 		})
 
-		return nil
+		return ctx.RedirectBack("/")
 	}).Get("/logout", func(ctx *fiber.Ctx) error {
 		username := ctx.Cookies("username")
 		if username == "" {
@@ -172,31 +129,12 @@ func (r *RestAPI) HandlersInit() error {
 
 		ctx.ClearCookie("username")
 
-		return nil
-	}).Get("/note/get", func(ctx *fiber.Ctx) error {
-		notes, err := r.db.GetAllNotes()
-		if err != nil {
-			r.logger.Error(err)
-			return fiber.NewError(fiber.StatusBadRequest, err.Error())
-		}
-
-		noteBytes, err := json.Marshal(notes)
-		if err != nil {
-			r.logger.Error(err)
-			return ctx.Status(fiber.StatusBadRequest).SendString(err.Error())
-		}
-
-		return ctx.SendStream(bytes.NewReader(noteBytes))
+		return ctx.RedirectBack("/")
 	}).Post("/note/add", func(ctx *fiber.Ctx) error {
 		username := ctx.Cookies("username")
 		if username == "" {
+			r.logger.Error("not authed")
 			return fiber.NewError(fiber.StatusBadRequest, "not authed")
-		}
-
-		user, err := r.db.GetUserByName(username)
-		if err != nil {
-			r.logger.Error(err)
-			return ctx.Status(fiber.StatusBadRequest).SendString(err.Error())
 		}
 
 		form, err := ctx.MultipartForm()
@@ -207,29 +145,27 @@ func (r *RestAPI) HandlersInit() error {
 
 		var title, content string
 		if vals, exists := form.Value["title"]; !exists || len(vals) == 0 {
+			r.logger.Error("no title")
 			return ctx.Status(fiber.StatusBadRequest).SendString("no title")
 		} else {
 			title = vals[0]
 		}
 
 		if vals, exists := form.Value["content"]; !exists || len(vals) == 0 {
+			r.logger.Error("no content")
 			return ctx.Status(fiber.StatusBadRequest).SendString("no content")
 		} else {
 			content = vals[0]
 		}
 
-		noteID, err := r.db.AddNote(&entities.Note{
+		if err = r.core.AddNoteToUserByName(username, &entities.Note{
 			Title:   title,
 			Content: content,
-			UserID:  user.ID,
-		})
-		if err != nil {
-			r.logger.Error(err)
-			return ctx.Status(fiber.StatusBadRequest).SendString(err.Error())
+		}); err != nil {
+			return err
 		}
 
-		r.logger.Debug(noteID)
-		return nil
+		return ctx.RedirectBack("/")
 	}).Get("/note/remove/:id", func(ctx *fiber.Ctx) error {
 		id, err := strconv.ParseUint(ctx.Params("id"), 10, 64)
 		if err != nil {
@@ -238,12 +174,13 @@ func (r *RestAPI) HandlersInit() error {
 		}
 
 		r.logger.Debug(id)
-		if err := r.db.RemoveNoteByID(id); err != nil {
+		if err := r.core.RemoveNoteByID(id); err != nil {
 			r.logger.Error(err)
 			return ctx.Status(fiber.StatusBadRequest).SendString(err.Error())
 		}
-		return nil
-	}).Patch("/update/:id", func(ctx *fiber.Ctx) error {
+
+		return ctx.RedirectBack("/")
+	}).Post("/note/update/:id", func(ctx *fiber.Ctx) error {
 		username := ctx.Cookies("username")
 		if username == "" {
 			return fmt.Errorf("not authed")
@@ -259,19 +196,8 @@ func (r *RestAPI) HandlersInit() error {
 
 		r.logger.Debug(id)
 
-		notes, err := r.db.GetNotesByUserName(username)
-		if err != nil {
-			r.logger.Error(err)
-			return ctx.Status(fiber.StatusBadRequest).SendString(err.Error())
-		}
-
-		note, exists := notes[id]
-		if !exists {
-			r.logger.Error("not found")
-			return ctx.Status(fiber.StatusBadRequest).SendString("not found")
-		}
-
 		form, err := ctx.MultipartForm()
+		var title, content string
 		if err != nil {
 			r.logger.Error(err)
 			return ctx.Status(fiber.StatusBadRequest).SendString(err.Error())
@@ -280,22 +206,27 @@ func (r *RestAPI) HandlersInit() error {
 		if vals, exists := form.Value["title"]; !exists || len(vals) == 0 {
 			return ctx.Status(fiber.StatusBadRequest).SendString("no title")
 		} else {
-			note.Title = vals[0]
+			title = vals[0]
+
 		}
 
 		if vals, exists := form.Value["content"]; !exists || len(vals) == 0 {
 			return ctx.Status(fiber.StatusBadRequest).SendString("no content")
 		} else {
-			note.Content = vals[0]
+			content = vals[0]
 		}
 
-		err = r.db.UpdateNote(note)
+		err = r.core.UpdateNoteByUserName(username, &entities.Note{
+			ID:      id,
+			Title:   title,
+			Content: content,
+		})
 		if err != nil {
 			r.logger.Error(err)
 			return ctx.Status(fiber.StatusBadRequest).SendString(err.Error())
 		}
 
-		return nil
+		return ctx.RedirectBack("/")
 	})
 
 	return nil
