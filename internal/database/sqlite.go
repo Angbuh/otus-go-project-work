@@ -50,20 +50,20 @@ func (s SQLiteDatabase) UpdateNote(note *entities.Note) error {
 	return err
 }
 
-func (s SQLiteDatabase) GetAllNotes() ([]*entities.Note, error) {
-	row, err := s.db.Query(`SELECT * FROM Note`)
+func (s SQLiteDatabase) GetAllNotes() (map[uint64]*entities.Note, error) {
+	row, err := s.db.Query(`SELECT * FROM Note;`)
 	if err != nil {
 		return nil, err
 	}
 
-	notes := []*entities.Note{}
+	notes := map[uint64]*entities.Note{}
 
 	for row.Next() {
-		n := &entities.Note{}
-		if err := row.Scan(&n.ID, &n.Title, &n.Content, &n.UserID); err != nil {
+		note := &entities.Note{}
+		if err := row.Scan(&note.ID, &note.Title, &note.Content, &note.UserID); err != nil {
 			return nil, err
 		}
-		notes = append(notes, n)
+		notes[note.ID] = note
 	}
 
 	return notes, nil

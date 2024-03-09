@@ -10,7 +10,7 @@ type DBRepository interface {
 	AddNote(*entities.Note) (uint64, error)
 	RemoveNoteByID(uint64) error
 	UpdateNote(*entities.Note) error
-	GetAllNotes() ([]*entities.Note, error)
+	GetAllNotes() (map[uint64]*entities.Note, error)
 	GetUserByName(name string) (*entities.User, error)
 	GetNotesByUserName(userName string) (map[uint64]*entities.Note, error)
 }

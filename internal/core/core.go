@@ -9,7 +9,7 @@ import (
 )
 
 type ServiceCore interface {
-	GetAllNotes() ([]*entities.Note, error)
+	GetAllNotes() (map[uint64]*entities.Note, error)
 	RemoveNoteByID(uint64) error
 	UpdateNoteByUserName(string, *entities.Note) error
 	GetNotesByUserName(string) (map[uint64]*entities.Note, error)
@@ -30,7 +30,7 @@ func NewTheCore(db database.DBRepository, logger *logrus.Logger) *TheCore {
 	}
 }
 
-func (c TheCore) GetAllNotes() ([]*entities.Note, error) {
+func (c TheCore) GetAllNotes() (map[uint64]*entities.Note, error) {
 	return c.db.GetAllNotes()
 }
 
@@ -59,9 +59,8 @@ func (c TheCore) GetNotesByUserName(username string) (map[uint64]*entities.Note,
 }
 
 func (c TheCore) RegisterUser(name, password, repeatedPassword string) error {
-
 	if password != repeatedPassword {
-		return fmt.Errorf("")
+		return fmt.Errorf("passwords do not match")
 	}
 
 	user := &entities.User{
@@ -82,7 +81,6 @@ func (c TheCore) RegisterUser(name, password, repeatedPassword string) error {
 }
 
 func (c TheCore) IsValidUserCredentials(username, password string) (bool, error) {
-
 	var err error
 	var user *entities.User
 	if user, err = c.db.GetUserByName(username); err != nil {
