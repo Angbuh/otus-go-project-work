@@ -80,7 +80,7 @@ func (f FakeDatabase) GetUserByName(name string) (*entities.User, error) {
 
 func (f FakeDatabase) GetNotesByUserName(userName string) (map[uint64]*entities.Note, error) {
 	var user *entities.User
-	if u, err := f.GetUserByName(userName); u == nil && err != nil {
+	if u, err := f.GetUserByName(userName); u == nil || err != nil {
 		return nil, err
 	} else {
 		user = u
@@ -152,4 +152,98 @@ func TestInvalidUserName(t *testing.T) {
 
 	assert.NotNil(t, err)
 	assert.Equal(t, db, NewFakeDatabase())
+}
+
+func TestUpdateNoteByUserName(t *testing.T) {
+	db := NewFakeDatabase()
+	log := logrus.New()
+
+	u := entities.User{
+		ID:       3,
+		Name:     "Ivan",
+		Password: "123",
+	}
+	n := entities.Note{
+		ID:      1,
+		Title:   "Beach",
+		Content: "nice beach and ocean",
+		UserID:  u.ID,
+	}
+
+	expectedNote := entities.Note{
+		ID:      n.ID,
+		Title:   "Linux Modules",
+		Content: "Linux is the best OS",
+		UserID:  u.ID,
+	}
+
+	ns := map[uint64]*entities.Note{
+		0: {
+			ID:      0,
+			Title:   "Tree",
+			Content: "One,two",
+			UserID:  u.ID,
+		},
+		n.ID: &n,
+	}
+
+	db.notes = ns
+	db.users = map[uint64]*entities.User{
+		u.ID: &u,
+	}
+
+	core := NewTheCore(db, log)
+
+	assert.Equal(t, &n, db.notes[n.ID])
+	err := core.UpdateNoteByUserName(u.Name, &expectedNote)
+	assert.Nil(t, err)
+	assert.Equal(t, &expectedNote, db.notes[expectedNote.ID])
+	core.UpdateNoteByUserName(u.Name, &expectedNote)
+
+}
+
+func TestEmptyTitleAndContent(t *testing.T) {
+	db := NewFakeDatabase()
+	log := logrus.New()
+	core := NewTheCore(db, log)
+
+	u := entities.User{
+		ID:       3,
+		Name:     "Ivan",
+		Password: "123",
+	}
+
+	n := entities.Note{
+		ID:      0,
+		Title:   "",
+		Content: "123",
+		UserID:  u.ID,
+	}
+
+	err := core.UpdateNoteByUserName(u.Name, &n)
+
+	assert.NotNil(t, err)
+	assert.Equal(t, db, NewFakeDatabase())
+}
+
+func TestIsValidUserCredentials(t *testing.T) {
+	db := NewFakeDatabase()
+	log := logrus.New()
+
+	u := entities.User{
+		ID:       3,
+		Name:     "Ivan",
+		Password: "123",
+	}
+
+	db.users = map[uint64]*entities.User{
+		u.ID: &u,
+	}
+
+	core := NewTheCore(db, log)
+	isValid, err := core.IsValidUserCredentials(u.Name, u.Password)
+
+	assert.Nil(t, err)
+	assert.True(t, isValid)
+
 }
