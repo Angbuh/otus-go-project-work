@@ -214,16 +214,40 @@ func TestEmptyTitleAndContent(t *testing.T) {
 	}
 
 	n := entities.Note{
-		ID:      0,
-		Title:   "",
-		Content: "123",
+		ID:      1,
+		Title:   "Beach",
+		Content: "nice beach and ocean",
 		UserID:  u.ID,
 	}
 
-	err := core.UpdateNoteByUserName(u.Name, &n)
+	db.notes = map[uint64]*entities.Note{
+		n.ID: &n,
+	}
+	db.users = map[uint64]*entities.User{
+		u.ID: &u,
+	}
+
+	note := entities.Note{
+		ID:      n.ID,
+		Title:   n.Title,
+		Content: "",
+		UserID:  u.ID,
+	}
+
+	err := core.UpdateNoteByUserName(u.Name, &note)
 
 	assert.NotNil(t, err)
-	assert.Equal(t, db, NewFakeDatabase())
+
+	note = entities.Note{
+		ID:      n.ID,
+		Title:   "",
+		Content: n.Content,
+		UserID:  u.ID,
+	}
+
+	err = core.UpdateNoteByUserName(u.Name, &note)
+
+	assert.NotNil(t, err)
 }
 
 func TestIsValidUserCredentials(t *testing.T) {

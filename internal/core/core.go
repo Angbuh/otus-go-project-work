@@ -53,10 +53,13 @@ func (c TheCore) UpdateNoteByUserName(username string, note *entities.Note) erro
 	_, exists := notes[note.ID]
 	if !exists {
 		c.logger.Error("not found")
-		return err
+		return fmt.Errorf("not found")
 	}
 
-	// TODO: добавить проверку на пустые Title и Content
+	// проверка на пустые Title и Content
+	if note.Title == "" || note.Content == "" {
+		return fmt.Errorf("empty title or content")
+	}
 
 	// Обновляем заметку, если она существует
 	return c.db.UpdateNote(note)
