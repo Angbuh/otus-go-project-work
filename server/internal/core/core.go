@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"my_notes_project/internal/database"
 	"my_notes_project/internal/entities"
+	"strings"
 
 	"github.com/sirupsen/logrus"
 )
@@ -42,6 +43,12 @@ func (c TheCore) RemoveNoteByID(id uint64) error {
 }
 
 func (c TheCore) UpdateNoteByUserName(username string, note *entities.Note) error {
+	// проверка на пустые Title и Content
+	if strings.TrimSpace(note.Title) == "" || strings.TrimSpace(note.Content) == "" {
+		c.logger.Error("empty title or content")
+		return fmt.Errorf("empty title or content")
+	}
+
 	// Получаем заметки по имени пользователя
 	notes, err := c.db.GetNotesByUserName(username)
 	if err != nil {
@@ -54,11 +61,6 @@ func (c TheCore) UpdateNoteByUserName(username string, note *entities.Note) erro
 	if !exists {
 		c.logger.Error("not found")
 		return fmt.Errorf("not found")
-	}
-
-	// проверка на пустые Title и Content
-	if note.Title == "" || note.Content == "" {
-		return fmt.Errorf("empty title or content")
 	}
 
 	// Обновляем заметку, если она существует
@@ -103,13 +105,19 @@ func (c TheCore) IsValidUserCredentials(username, password string) (bool, error)
 		return false, err
 	}
 
-	// err == nil
+	// err == nil8
 
 	//Проверяем действительный ли пароль пользователя и тот, который он вводит
 	return user.Password == password, nil
 }
 
 func (c TheCore) AddNoteToUserByName(username string, note *entities.Note) error {
+	// проверка на пустые Title и Content
+	if strings.TrimSpace(note.Title) == "" || strings.TrimSpace(note.Content) == "" {
+		c.logger.Error("empty title or content")
+		return fmt.Errorf("empty title or content")
+	}
+
 	//Получаем пользователя из базы данных по его имени
 	user, err := c.db.GetUserByName(username)
 	if err != nil {

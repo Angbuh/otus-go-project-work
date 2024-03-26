@@ -29,7 +29,7 @@ func main() {
 	logger.SetLevel(lvl)
 
 	// Настраиваем путь до базы данных
-	db, err := database.NewSQLiteDatabase(config.DatabasePath)
+	db, err := database.NewSQLiteDatabase(config.DatabasePath, logger)
 	if err != nil {
 		panic(err)
 	}

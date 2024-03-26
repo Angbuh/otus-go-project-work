@@ -154,6 +154,42 @@ func TestInvalidUserName(t *testing.T) {
 	assert.Equal(t, db, NewFakeDatabase())
 }
 
+func TestExistenceNote(t *testing.T) {
+	db := NewFakeDatabase()
+	log := logrus.New()
+	core := NewTheCore(db, log)
+
+	u := entities.User{
+		ID:       0,
+		Name:     "Sasha",
+		Password: "&86398",
+	}
+	n := entities.Note{
+		ID:      0,
+		Title:   "Testify",
+		Content: "В testify есть два основных пакета с проверками — assert и require",
+		UserID:  u.ID,
+	}
+	note := entities.Note{
+		ID:      1,
+		Title:   "Testify",
+		Content: "В testify есть два основных пакета с проверками — assert и require",
+		UserID:  u.ID,
+	}
+	db.users = map[uint64]*entities.User{
+		u.ID: &u,
+	}
+
+	db.notes = map[uint64]*entities.Note{
+		n.ID: &n,
+	}
+
+	err := core.UpdateNoteByUserName(u.Name, &note)
+
+	assert.NotNil(t, err)
+
+}
+
 func TestUpdateNoteByUserName(t *testing.T) {
 	db := NewFakeDatabase()
 	log := logrus.New()
@@ -270,4 +306,250 @@ func TestIsValidUserCredentials(t *testing.T) {
 	assert.Nil(t, err)
 	assert.True(t, isValid)
 
+}
+
+func TestGetAllNotes(t *testing.T) {
+	db := NewFakeDatabase()
+	log := logrus.New()
+
+	u := entities.User{
+		ID:       3,
+		Name:     "Ivan",
+		Password: "123",
+	}
+
+	ns := map[uint64]*entities.Note{
+		0: {
+			ID:      0,
+			Title:   "Tree",
+			Content: "One,two",
+			UserID:  u.ID,
+		},
+	}
+
+	db.notes = ns
+	db.users = map[uint64]*entities.User{
+		u.ID: &u,
+	}
+	core := NewTheCore(db, log)
+	res, err := core.GetAllNotes()
+
+	assert.Nil(t, err)
+	assert.Equal(t, ns, res)
+}
+
+func TestRemoveNoteByID(t *testing.T) {
+	db := NewFakeDatabase()
+	log := logrus.New()
+	core := NewTheCore(db, log)
+
+	u := entities.User{
+		ID:       3,
+		Name:     "Ivan",
+		Password: "123",
+	}
+
+	n := entities.Note{
+		ID:      1,
+		Title:   "Beach",
+		Content: "nice beach and ocean",
+		UserID:  u.ID,
+	}
+
+	db.notes = map[uint64]*entities.Note{
+		n.ID: &n,
+	}
+	db.users = map[uint64]*entities.User{
+		u.ID: &u,
+	}
+
+	err := core.RemoveNoteByID(n.ID)
+	assert.Nil(t, err)
+	assert.Empty(t, db.notes)
+
+}
+
+func TestAddNoteToUserByName(t *testing.T) {
+	db := NewFakeDatabase()
+	log := logrus.New()
+
+	u := entities.User{
+		ID:       0,
+		Name:     "Ivan",
+		Password: "123",
+	}
+
+	n := entities.Note{
+		ID:      1,
+		Title:   "Beach",
+		Content: "nice beach and ocean",
+		UserID:  u.ID,
+	}
+
+	ns := map[uint64]*entities.Note{
+		0: {
+			ID:      0,
+			Title:   "Tree",
+			Content: "One,two",
+			UserID:  u.ID,
+		},
+	}
+
+	db.notes = ns
+	db.users = map[uint64]*entities.User{
+		u.ID: &u,
+	}
+	*db.nextNoteID = 1
+	*db.nextUserID = 1
+
+	core := NewTheCore(db, log)
+
+	expectedNotes := map[uint64]*entities.Note{
+		0: {
+			ID:      0,
+			Title:   "Tree",
+			Content: "One,two",
+			UserID:  u.ID,
+		},
+		1: {
+			ID:      1,
+			Title:   "Beach",
+			Content: "nice beach and ocean",
+			UserID:  u.ID,
+		},
+	}
+
+	err := core.AddNoteToUserByName(u.Name, &n)
+
+	assert.Nil(t, err)
+	assert.Equal(t, expectedNotes, db.notes)
+}
+
+func TestGetNotesByUserName(t *testing.T) {
+	db := NewFakeDatabase()
+	log := logrus.New()
+
+	u := entities.User{
+		ID:       0,
+		Name:     "Ivan",
+		Password: "123",
+	}
+
+	u1 := entities.User{
+		ID:       1,
+		Name:     "Igor",
+		Password: "01876",
+	}
+
+	ns := map[uint64]*entities.Note{
+		0: {
+			ID:      0,
+			Title:   "Tree",
+			Content: "One,two",
+			UserID:  u.ID,
+		},
+		1: {
+			ID:      1,
+			Title:   "Beach",
+			Content: "nice beach and ocean",
+			UserID:  u.ID,
+		},
+		2: {
+			ID:      2,
+			Title:   "Algorithm",
+			Content: "Binary search, selection sort",
+			UserID:  u1.ID,
+		},
+		3: {
+			ID:      3,
+			Title:   "Algorithm",
+			Content: "Recursion, hash tables",
+			UserID:  u1.ID,
+		},
+	}
+
+	db.notes = ns
+	db.users = map[uint64]*entities.User{
+		u.ID:  &u,
+		u1.ID: &u1,
+	}
+	*db.nextNoteID = 4
+	*db.nextUserID = 2
+	core := NewTheCore(db, log)
+
+	expectedNotes := map[uint64]*entities.Note{
+		0: {
+			ID:      0,
+			Title:   "Tree",
+			Content: "One,two",
+			UserID:  u.ID,
+		},
+		1: {
+			ID:      1,
+			Title:   "Beach",
+			Content: "nice beach and ocean",
+			UserID:  u.ID,
+		},
+	}
+
+	expectedNotes1 := map[uint64]*entities.Note{
+		2: {
+			ID:      2,
+			Title:   "Algorithm",
+			Content: "Binary search, selection sort",
+			UserID:  u1.ID,
+		},
+		3: {
+			ID:      3,
+			Title:   "Algorithm",
+			Content: "Recursion, hash tables",
+			UserID:  u1.ID,
+		},
+	}
+	res, err := core.GetNotesByUserName(u.Name)
+	assert.Nil(t, err)
+	assert.Equal(t, expectedNotes, res)
+	res1, err := core.GetNotesByUserName(u1.Name)
+	assert.Nil(t, err)
+	assert.Equal(t, expectedNotes1, res1)
+
+}
+
+func TestAddNoteToUserByNameEmptyTitleAndContent(t *testing.T) {
+	db := NewFakeDatabase()
+	log := logrus.New()
+
+	u := entities.User{
+		ID:       0,
+		Name:     "Ivan",
+		Password: "123",
+	}
+
+	db.users = map[uint64]*entities.User{
+		u.ID: &u,
+	}
+
+	core := NewTheCore(db, log)
+
+	note := entities.Note{
+		ID:      0,
+		Title:   "Member of society",
+		Content: "",
+		UserID:  u.ID,
+	}
+
+	err := core.AddNoteToUserByName(u.Name, &note)
+
+	assert.NotNil(t, err)
+
+	note = entities.Note{
+		ID:      1,
+		Title:   "",
+		Content: "В testify есть два основных пакета с проверками — assert и require",
+		UserID:  u.ID,
+	}
+
+	err = core.AddNoteToUserByName(u.Name, &note)
+
+	assert.NotNil(t, err)
 }
